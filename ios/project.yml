@@ -1,0 +1,83 @@
+name: Stride
+
+options:
+  bundleIdPrefix: app.stride
+  deploymentTarget:
+    iOS: "17.0"
+  developmentLanguage: en
+  createIntermediateGroups: true
+
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    SWIFT_STRICT_CONCURRENCY: minimal
+    MARKETING_VERSION: "0.1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    IPHONEOS_DEPLOYMENT_TARGET: "17.0"
+
+targets:
+  Stride:
+    type: application
+    platform: iOS
+    deploymentTarget: "17.0"
+    sources:
+      - path: Stride
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: app.stride.ios
+        PRODUCT_NAME: Stride
+        TARGETED_DEVICE_FAMILY: "1"
+        GENERATE_INFOPLIST_FILE: NO
+        CODE_SIGN_STYLE: Automatic
+        DEVELOPMENT_TEAM: ""
+        # Backend base URL baked into Info.plist (key StrideAPIURL).
+        # Override per build: xcodebuild ... STRIDE_API_URL=https://stride.example.org
+        STRIDE_API_URL: "http://192.168.178.66:8091"
+    info:
+      path: Stride/Info.plist
+      properties:
+        CFBundleDevelopmentRegion: en
+        CFBundleDisplayName: Stride
+        CFBundleExecutable: $(EXECUTABLE_NAME)
+        CFBundleIdentifier: $(PRODUCT_BUNDLE_IDENTIFIER)
+        CFBundleInfoDictionaryVersion: "6.0"
+        CFBundleName: $(PRODUCT_NAME)
+        CFBundlePackageType: APPL
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        LSRequiresIPhoneOS: true
+        UILaunchScreen: {}
+        UIRequiredDeviceCapabilities: [arm64]
+        UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
+        StrideAPIURL: $(STRIDE_API_URL)
+        NSCameraUsageDescription: Stride uses the camera to take photos of places.
+        NSLocationWhenInUseUsageDescription: Stride records where each photo was taken and which way the camera pointed.
+        NSMotionUsageDescription: Stride records the tilt and direction of the camera with each photo.
+        NSLocalNetworkUsageDescription: Stride connects to your Stride server on the local network.
+        NSAppTransportSecurity:
+          NSAllowsLocalNetworking: true
+          NSExceptionDomains:
+            "192.168.178.66":
+              NSExceptionAllowsInsecureHTTPLoads: true
+              NSIncludesSubdomains: false
+    scheme:
+      testTargets:
+        - StrideTests
+      gatherCoverageData: false
+
+  StrideTests:
+    type: bundle.unit-test
+    platform: iOS
+    deploymentTarget: "17.0"
+    sources:
+      - path: StrideTests
+    dependencies:
+      - target: Stride
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: app.stride.ios.tests
+        GENERATE_INFOPLIST_FILE: YES
+        TEST_HOST: $(BUILT_PRODUCTS_DIR)/Stride.app/Stride
+        BUNDLE_LOADER: $(TEST_HOST)
+        CODE_SIGN_STYLE: Automatic
+        DEVELOPMENT_TEAM: ""

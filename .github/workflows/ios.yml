@@ -1,0 +1,136 @@
+name: iOS
+
+on:
+  push:
+    paths:
+      - "ios/**"
+      - ".github/workflows/ios.yml"
+  pull_request:
+    paths:
+      - "ios/**"
+      - ".github/workflows/ios.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: ios-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-test:
+    runs-on: macos-15
+    timeout-minutes: 45
+    defaults:
+      run:
+        working-directory: ios
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select latest stable Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
+      - name: Show toolchain
+        run: |
+          xcodebuild -version
+          swift --version
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate Xcode project
+        run: xcodegen generate
+
+      - name: Pick an iPhone simulator
+        id: sim
+        run: |
+          set -euo pipefail
+          xcrun simctl list devices available -j > /tmp/devices.json
+          UDID=$(/usr/bin/python3 - <<'PY'
+          import json, re
+          data = json.load(open("/tmp/devices.json"))["devices"]
+          best = None
+          for runtime, devices in data.items():
+              m = re.search(r"iOS-(\d+)-(\d+)", runtime)
+              if not m:
+                  continue
+              version = (int(m.group(1)), int(m.group(2)))
+              for d in devices:
+                  if d.get("isAvailable", True) and d["name"].startswith("iPhone"):
+                      if best is None or version > best[0]:
+                          best = (version, d["udid"], d["name"])
+                      break
+          if best is None:
+              raise SystemExit("no iPhone simulator found")
+          print(best[1])
+          PY
+          )
+          echo "Using simulator $UDID"
+          echo "udid=$UDID" >> "$GITHUB_OUTPUT"
+
+      - name: Build and run unit tests (simulator)
+        run: |
+          set -o pipefail
+          xcodebuild test \
+            -project Stride.xcodeproj \
+            -scheme Stride \
+            -destination "id=${{ steps.sim.outputs.udid }}" \
+            -derivedDataPath build/sim \
+            CODE_SIGNING_ALLOWED=NO
+
+      - name: Build unsigned device app
+        run: |
+          set -o pipefail
+          xcodebuild build \
+            -project Stride.xcodeproj \
+            -scheme Stride \
+            -configuration Release \
+            -destination "generic/platform=iOS" \
+            -derivedDataPath build/device \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY=""
+
+      - name: Package unsigned .ipa
+        run: |
+          set -euo pipefail
+          rm -rf Payload Stride-unsigned.ipa
+          mkdir Payload
+          cp -R build/device/Build/Products/Release-iphoneos/Stride.app Payload/
+          zip -qry Stride-unsigned.ipa Payload
+          ls -lh Stride-unsigned.ipa
+
+      - name: Upload unsigned .ipa
+        uses: actions/upload-artifact@v4
+        with:
+          name: Stride-unsigned-ipa
+          path: ios/Stride-unsigned.ipa
+          if-no-files-found: error
+
+      # --- Signing / TestFlight (out of scope until an Apple Developer account exists) ---
+      # - name: Import signing certificate
+      #   uses: apple-actions/import-codesign-certs@v3
+      #   with:
+      #     p12-file-base64: ${{ secrets.IOS_DIST_CERT_P12 }}
+      #     p12-password: ${{ secrets.IOS_DIST_CERT_PASSWORD }}
+      # - name: Download provisioning profiles
+      #   uses: apple-actions/download-provisioning-profiles@v3
+      #   with:
+      #     bundle-id: app.stride.ios
+      #     issuer-id: ${{ secrets.APPSTORE_ISSUER_ID }}
+      #     api-key-id: ${{ secrets.APPSTORE_KEY_ID }}
+      #     api-private-key: ${{ secrets.APPSTORE_PRIVATE_KEY }}
+      # - name: Archive and export
+      #   run: |
+      #     xcodebuild archive -project Stride.xcodeproj -scheme Stride \
+      #       -archivePath build/Stride.xcarchive DEVELOPMENT_TEAM=${{ secrets.APPLE_TEAM_ID }}
+      #     xcodebuild -exportArchive -archivePath build/Stride.xcarchive \
+      #       -exportOptionsPlist ExportOptions.plist -exportPath build/export
+      # - name: Upload to TestFlight
+      #   uses: apple-actions/upload-testflight-build@v1
+      #   with:
+      #     app-path: ios/build/export/Stride.ipa
+      #     issuer-id: ${{ secrets.APPSTORE_ISSUER_ID }}
+      #     api-key-id: ${{ secrets.APPSTORE_KEY_ID }}
+      #     api-private-key: ${{ secrets.APPSTORE_PRIVATE_KEY }}

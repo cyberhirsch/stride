@@ -61,7 +61,7 @@ Map query (bounding box):
 GET /api/collections/photos/records
   ?filter=(lat>=S && lat<=N && lon>=W && lon<=E)
   &sort=-captured_at&perPage=500&skipTotal=1
-  &fields=id,collectionId,image,lat,lon,heading,fov_h,captured_at,title
+  &fields=id,collectionId,image,lat,lon,heading,has_heading,fov_h,captured_at,title
 ```
 
 Image URLs: `/api/files/photos/<id>/<image>`; thumbnails `?thumb=400x0` and
