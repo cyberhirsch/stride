@@ -22,8 +22,20 @@ export class PhotoMap {
       new maplibregl.GeolocateControl({ positionOptions: { enableHighAccuracy: true } }),
       "bottom-right",
     );
+    this.collapseAttribution();
     // style.load, not load: the latter waits for every basemap tile
     this.map.once("style.load", () => this.setup());
+  }
+
+  /** MapLibre opens the compact attribution when the first source reports in; fold it to the (i) button. */
+  private collapseAttribution() {
+    const collapse = () => {
+      const el = this.map.getContainer().querySelector(".maplibregl-ctrl-attrib");
+      if (!el?.classList.contains("maplibregl-compact")) return;
+      el.classList.remove("maplibregl-compact-show");
+      this.map.off("sourcedata", collapse);
+    };
+    this.map.on("sourcedata", collapse);
   }
 
   private setup() {

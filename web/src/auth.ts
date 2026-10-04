@@ -3,7 +3,9 @@ import { errorMessage, h, openModal, toast } from "./ui";
 
 export function openAuth(onDone: () => void) {
   let mode: "login" | "register" = "login";
-  const name = h("input", { type: "text", placeholder: "Display name", autocomplete: "name" });
+  // autocomplete off: Brave 1.96's autofill-on-typing popup for "name" fields
+  // crashes the whole browser (crash key autofill-suggestions-shown-on-typing)
+  const name = h("input", { type: "text", name: "display_name", placeholder: "Display name", autocomplete: "off" });
   const email = h("input", { type: "email", placeholder: "Email", autocomplete: "email", required: true });
   const password = h("input", { type: "password", placeholder: "Password (min. 8)", autocomplete: "current-password", required: true });
   const nameRow = h("label", { hidden: true }, "Name", name);
