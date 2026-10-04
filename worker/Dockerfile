@@ -7,7 +7,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y --no-install-recommends \
       git ca-certificates cmake ninja-build build-essential \
       libboost-program-options-dev libboost-graph-dev libboost-system-dev \
-      libeigen3-dev libopenimageio-dev libmetis-dev libgoogle-glog-dev \
+      libeigen3-dev libopenimageio-dev openimageio-tools libmetis-dev libgoogle-glog-dev \
       libgtest-dev libgmock-dev libsqlite3-dev libcgal-dev libceres-dev \
       libcurl4-openssl-dev libssl-dev libopenblas-dev \
       python3 python3-dev python3-venv \
