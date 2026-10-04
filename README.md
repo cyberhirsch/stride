@@ -18,4 +18,13 @@ Panoramio's map and community, Photosynth's walk-through, plus time.
 
 ## Status
 
-Concept. See [docs/PRD.md](docs/PRD.md) and [docs/ROADMAP.md](docs/ROADMAP.md).
+M1 in progress: capture apps, web map and upload. Alignment not started.
+See [docs/PRD.md](docs/PRD.md), [docs/ROADMAP.md](docs/ROADMAP.md) and
+[docs/API.md](docs/API.md).
+
+| folder | what | build |
+|---|---|---|
+| [server/](server) | PocketBase on the Pi (Docker) | `server/deploy.sh` |
+| [web/](web) | map, photo details, upload | GitHub Pages: https://cyberhirsch.github.io/stride/ |
+| [android/](android) | capture app, Kotlin + Compose | Actions artifact `stride-apks`; tag `v*` for a release |
+| [ios/](ios) | capture app, SwiftUI | Actions, unsigned `.ipa` artifact |
