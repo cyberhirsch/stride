@@ -1,4 +1,4 @@
-import { currentUser, getPhoto, imageUrl, LICENSES, pb, type Photo } from "./api";
+import { currentUser, getPhoto, imageUrl, LICENSES, pb, poseOfPhoto, type Photo } from "./api";
 import { errorMessage, fmt, h, openModal, toast } from "./ui";
 
 const REASONS = {
@@ -13,6 +13,7 @@ export class PhotoPanel {
   private el = document.getElementById("panel")!;
   onClose: () => void = () => {};
   onDeleted: (id: string) => void = () => {};
+  onWalk: (placeId: string, photoId: string) => void = () => {};
 
   async show(id: string): Promise<Photo | null> {
     this.el.hidden = false;
@@ -62,6 +63,14 @@ export class PhotoPanel {
     if (p.width) rows.push(["Size", `${p.width} × ${p.height}`]);
     if (p.device) rows.push(["Device", `${p.device} · ${p.platform}`]);
 
+    const walk = h("button", { class: "glow", hidden: true }, "Walk through");
+    poseOfPhoto(p.id)
+      .then((pose) => {
+        if (!pose) return;
+        walk.hidden = false;
+        walk.onclick = () => this.onWalk(pose.place, p.id);
+      })
+      .catch(() => {});
     this.el.replaceChildren(
       this.header(p.title),
       h(
@@ -73,6 +82,7 @@ export class PhotoPanel {
       h(
         "div",
         { class: "panel-actions" },
+        walk,
         h("button", { onclick: () => this.share(p) }, "Copy link"),
         own
           ? h("button", { onclick: () => this.remove(p) }, "Delete")

@@ -148,3 +148,25 @@ p { margin: 0; }
   .bar { padding: 0 12px; }
   .bar-actions button { padding: 8px 10px; }
 }
+
+/* ---- walk-through viewer ---- */
+.walk { position: fixed; inset: 0; z-index: 30; background: #000; }
+.walk canvas { display: block; cursor: zoom-in; }
+.walk-bar {
+  position: absolute; inset: 0 0 auto 0; height: var(--bar-h);
+  display: flex; align-items: center; gap: 12px; padding: 0 16px;
+  background: linear-gradient(rgba(0, 0, 0, 0.75), rgba(0, 0, 0, 0));
+}
+.walk-title { font: 600 13px var(--font-ui); text-transform: uppercase; letter-spacing: 0.1rem; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.walk-count { font-family: var(--font-ui); font-size: 12px; }
+.walk-arrow {
+  position: absolute; width: 52px; height: 52px; padding: 0; font-size: 22px; text-transform: none;
+  background: rgba(0, 0, 0, 0.45); border-color: rgba(255, 255, 255, 0.35); backdrop-filter: blur(4px);
+}
+.walk-arrow:hover:not(:disabled) { background: rgba(0, 0, 0, 0.7); border-color: #fff; }
+.walk-arrow.forward { left: calc(50% - 26px); bottom: 96px; }
+.walk-arrow.back { left: calc(50% - 26px); bottom: 32px; }
+.walk-arrow.left { left: calc(50% - 90px); bottom: 32px; }
+.walk-arrow.right { left: calc(50% + 38px); bottom: 32px; }
+.walk-arrow.turnLeft { left: 24px; top: 50%; }
+.walk-arrow.turnRight { right: 24px; top: 50%; }

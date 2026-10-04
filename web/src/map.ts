@@ -1,6 +1,6 @@
 import maplibregl, { type GeoJSONSource } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
-import { photosInBounds, type Photo } from "./api";
+import { alignedPlacesInBounds, photosInBounds, type Photo } from "./api";
 
 const STYLE = "https://tiles.openfreemap.org/styles/dark";
 const EMPTY: GeoJSON.FeatureCollection = { type: "FeatureCollection", features: [] };
@@ -12,6 +12,7 @@ export class PhotoMap {
   private ready = false;
   private readyQueue: (() => void)[] = [];
   onSelect: (id: string) => void = () => {};
+  onPlace: (id: string) => void = () => {};
   onClickEmpty: (lngLat: maplibregl.LngLat) => void = () => {};
   onMove: () => void = () => {};
 
@@ -43,6 +44,7 @@ export class PhotoMap {
     m.addImage("wedge", wedgeIcon(), { pixelRatio: 2 });
     m.addSource("photos", { type: "geojson", data: EMPTY, cluster: true, clusterRadius: 44, clusterMaxZoom: 16 });
     m.addSource("selected", { type: "geojson", data: EMPTY });
+    m.addSource("places", { type: "geojson", data: EMPTY });
 
     m.addLayer({
       id: "clusters",
@@ -63,6 +65,18 @@ export class PhotoMap {
       filter: ["has", "point_count"],
       layout: { "text-field": ["get", "point_count_abbreviated"], "text-size": 11, "text-font": ["Noto Sans Regular"] },
       paint: { "text-color": "#fff" },
+    });
+    // explorable places: a ring around the cluster of aligned photos (PRD M2)
+    m.addLayer({
+      id: "places",
+      type: "circle",
+      source: "places",
+      paint: {
+        "circle-color": "rgba(255,255,255,0.06)",
+        "circle-stroke-color": "#fff",
+        "circle-stroke-width": 2,
+        "circle-radius": ["interpolate", ["linear"], ["zoom"], 10, 8, 16, 26, 19, 60],
+      },
     });
     m.addLayer({
       id: "selected-cone",
@@ -104,14 +118,19 @@ export class PhotoMap {
       const zoom = await src.getClusterExpansionZoom(f.properties.cluster_id);
       m.easeTo({ center: (f.geometry as GeoJSON.Point).coordinates as [number, number], zoom });
     });
+    m.on("click", "places", (e) => {
+      if (m.queryRenderedFeatures(e.point, { layers: ["points", "clusters"] }).length) return;
+      const id = e.features?.[0]?.properties.id;
+      if (id) this.onPlace(id);
+    });
     m.on("click", "points", (e) => {
       const id = e.features?.[0]?.properties.id;
       if (id) this.onSelect(id);
     });
     m.on("click", (e) => {
-      if (!m.queryRenderedFeatures(e.point, { layers: ["points", "clusters"] }).length) this.onClickEmpty(e.lngLat);
+      if (!m.queryRenderedFeatures(e.point, { layers: ["points", "clusters", "places"] }).length) this.onClickEmpty(e.lngLat);
     });
-    for (const l of ["points", "clusters"]) {
+    for (const l of ["points", "clusters", "places"]) {
       m.on("mouseenter", l, () => (m.getCanvas().style.cursor = "pointer"));
       m.on("mouseleave", l, () => (m.getCanvas().style.cursor = ""));
     }
@@ -138,9 +157,20 @@ export class PhotoMap {
   private async load() {
     const b = this.map.getBounds();
     try {
-      const items = await photosInBounds(b.getSouth(), b.getWest(), b.getNorth(), b.getEast());
+      const [items, places] = await Promise.all([
+        photosInBounds(b.getSouth(), b.getWest(), b.getNorth(), b.getEast()),
+        alignedPlacesInBounds(b.getSouth(), b.getWest(), b.getNorth(), b.getEast()).catch(() => []),
+      ]);
       for (const p of items) this.loaded.set(p.id, p);
       this.render();
+      (this.map.getSource("places") as GeoJSONSource | undefined)?.setData({
+        type: "FeatureCollection",
+        features: places.map((p) => ({
+          type: "Feature",
+          geometry: { type: "Point", coordinates: [p.lon, p.lat] },
+          properties: { id: p.id, count: p.ok_count },
+        })),
+      });
     } catch (err) {
       console.warn("loading photos failed", err);
     }

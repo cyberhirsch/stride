@@ -1,0 +1,4 @@
+pycolmap==4.2.1
+numpy>=2.0
+requests>=2.32
+pillow>=11.0

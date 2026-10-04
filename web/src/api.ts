@@ -72,3 +72,69 @@ export function getPhoto(id: string) {
 export function currentUser() {
   return pb.authStore.isValid ? pb.authStore.record : null;
 }
+
+/* ---------- alignment results ---------- */
+
+export interface Place extends RecordModel {
+  status: "pending" | "queued" | "aligned" | "failed";
+  lat: number;
+  lon: number;
+  photo_count: number;
+  ok_count: number;
+  origin_lat: number;
+  origin_lon: number;
+  origin_alt: number;
+  points: string;
+  points_count: number;
+}
+
+/** Camera pose in the place's east-north-up frame; see docs/API.md. */
+export interface Pose extends RecordModel {
+  place: string;
+  photo: string;
+  ok: boolean;
+  x: number;
+  y: number;
+  z: number;
+  qx: number;
+  qy: number;
+  qz: number;
+  qw: number;
+  fx: number;
+  fy: number;
+  cx: number;
+  cy: number;
+  median_depth: number;
+  heading: number;
+  expand?: { photo?: Photo };
+}
+
+export function getPlace(id: string) {
+  return pb.collection("places").getOne<Place>(id);
+}
+
+export function placePoses(placeId: string) {
+  return pb.collection("poses").getFullList<Pose>({
+    filter: pb.filter("place = {:p} && ok = true", { p: placeId }),
+    expand: "photo",
+    fields: "*,expand.photo.id,expand.photo.collectionId,expand.photo.collectionName,expand.photo.image,expand.photo.width,expand.photo.height,expand.photo.title",
+  });
+}
+
+export async function poseOfPhoto(photoId: string): Promise<Pose | null> {
+  const r = await pb.collection("poses").getList<Pose>(1, 1, { filter: pb.filter("photo = {:p} && ok = true", { p: photoId }) });
+  return r.items[0] ?? null;
+}
+
+export async function alignedPlacesInBounds(s: number, w: number, n: number, e: number) {
+  const res = await pb.collection("places").getList<Place>(1, 200, {
+    filter: pb.filter("status = 'aligned' && ok_count >= 2 && lat >= {:s} && lat <= {:n} && lon >= {:w} && lon <= {:e}", { s, n, w, e }),
+    fields: "id,lat,lon,ok_count,photo_count",
+    skipTotal: true,
+  });
+  return res.items;
+}
+
+export function pointsUrl(place: Place) {
+  return pb.files.getURL(place, place.points);
+}

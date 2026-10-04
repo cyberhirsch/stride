@@ -17,3 +17,5 @@ data/
 !.env.example
 pb_data/
 !web/.env.development
+.venv/
+__pycache__/

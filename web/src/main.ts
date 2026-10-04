@@ -7,12 +7,12 @@ import { PhotoPanel } from "./panel";
 import { toast } from "./ui";
 import { Uploader } from "./upload";
 
-// URL hash: #map=zoom/lat/lon and/or photo=<id>, joined with &
+// URL hash: #map=zoom/lat/lon, photo=<id> and place=<id> (walk-through), joined with &
 function readHash() {
   const params = new URLSearchParams(location.hash.slice(1));
   const [z, lat, lon] = (params.get("map") ?? "").split("/").map(Number);
   const view = Number.isFinite(lat) && Number.isFinite(lon) && z ? { zoom: z, center: [lon, lat] as [number, number] } : null;
-  return { view, photo: params.get("photo") };
+  return { view, photo: params.get("photo"), place: params.get("place") };
 }
 
 const initial = readHash();
@@ -20,10 +20,12 @@ const initial = readHash();
 const photoMap = new PhotoMap("map", initial.view ?? { center: [12.1289, 47.8561], zoom: 13 });
 const panel = new PhotoPanel();
 let selected: string | null = null;
+let walkPlace: string | null = null;
 
 function writeHash() {
   const c = photoMap.map.getCenter();
   const parts = [`map=${photoMap.map.getZoom().toFixed(2)}/${c.lat.toFixed(5)}/${c.lng.toFixed(5)}`];
+  if (walkPlace) parts.push(`place=${walkPlace}`);
   if (selected) parts.push(`photo=${selected}`);
   history.replaceState(null, "", `#${parts.join("&")}`);
 }
@@ -54,7 +56,31 @@ function moveTo(p: Photo, fly: boolean) {
   });
 }
 
+/* ---- walk-through viewer, loaded on demand (three.js is large) ---- */
+let walker: import("./walk").WalkViewer | null = null;
+async function openWalk(placeId: string, photoId: string | null) {
+  if (!walker) {
+    const { WalkViewer } = await import("./walk");
+    walker = new WalkViewer();
+    walker.onPhoto = (id) => {
+      selected = id;
+      writeHash();
+    };
+    walker.onClose = (id) => {
+      walkPlace = null;
+      if (id) select(id, true);
+      else writeHash();
+    };
+  }
+  walkPlace = placeId;
+  panel.hide();
+  writeHash();
+  await walker.open(placeId, photoId).catch((e) => toast(`Could not open place: ${e?.message ?? e}`));
+}
+
 photoMap.onSelect = (id) => select(id);
+photoMap.onPlace = (id) => openWalk(id, null);
+panel.onWalk = (placeId, photoId) => openWalk(placeId, photoId);
 photoMap.onMove = writeHash;
 panel.onClose = () => select(null);
 panel.onDeleted = (id) => {
@@ -106,12 +132,15 @@ btnAccount.addEventListener("click", () => (currentUser() ? openAccount(refreshH
 btnUpload.addEventListener("click", () => (currentUser() ? uploader.open() : openAuth(() => (refreshHeader(), uploader.open()))));
 
 window.addEventListener("hashchange", () => {
-  const { photo } = readHash();
-  if (photo !== selected) select(photo, true);
+  const { photo, place } = readHash();
+  if (place && place !== walkPlace) openWalk(place, photo);
+  else if (!place && walker?.isOpen) walker.close();
+  else if (!place && photo !== selected) select(photo, true);
 });
 
 refreshHeader();
 if (pb.authStore.isValid) pb.collection("users").authRefresh().catch(() => (pb.authStore.clear(), refreshHeader()));
 // open a deep-linked photo once the map's layers exist
-if (initial.photo) photoMap.whenReady(() => select(initial.photo, !initial.view));
+if (initial.place) openWalk(initial.place, initial.photo);
+else if (initial.photo) photoMap.whenReady(() => select(initial.photo, !initial.view));
 pb.health.check().catch(() => toast(`Server unreachable: ${pb.baseURL}`));

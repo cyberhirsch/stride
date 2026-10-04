@@ -91,3 +91,45 @@ stands alone:
 XMP namespace `https://stride.app/ns/1.0/` (prefix `stride`):
 `stride:Pitch`, `stride:Roll`, `stride:HeadingAccuracy`, `stride:FovH`,
 `stride:FovV`.
+
+## Alignment
+
+Photos within 40 m of each other form a **place** (server cron every 10 min,
+or `pocketbase stride-cluster`). A place with at least 5 photos and new
+members gets an **align job**. Volunteer workers ([worker/](../worker)) pull
+jobs, run structure-from-motion and post **poses**.
+
+### Collection `places` (public read)
+
+| field | meaning |
+|---|---|
+| `status` | `pending` · `queued` · `aligned` · `failed` |
+| `lat`, `lon`, `photo_count` | centroid and size, for the map |
+| `origin_lat`, `origin_lon`, `origin_alt` | origin of the place's east-north-up frame |
+| `registered_count`, `ok_count` | photos aligned / aligned well enough to walk |
+| `points` | sparse point cloud: per point little-endian `float32 x, y, z` (ENU m) + `uint8 r, g, b` (15 bytes) |
+| `stats` | worker statistics (timings, residuals) |
+
+### Collection `poses` (public read)
+
+One per aligned photo. Position `x, y, z` in metres east, north, up of the
+place origin. Rotation `qx, qy, qz, qw` maps camera to world, camera axes x
+right, y down, z forward (COLMAP). Intrinsics `fx, fy, cx` normalised by
+image width, `cy` by height; `k1` radial distortion. `median_depth` (m) of
+the photo's 3D points; `ok` false for poorly aligned photos, which stay plain
+pins (PRD A6).
+
+### Worker protocol
+
+All routes need a signed-in user (`Authorization: <token>`).
+
+| route | effect |
+|---|---|
+| `POST /api/stride/jobs/claim` | 204 if idle, else `{job, place, lease_until, photos: [{id, image, lat, lon, heading, …}]}`; lease 60 min |
+| `POST /api/stride/jobs/{id}/heartbeat` | extends the lease |
+| `POST /api/stride/jobs/{id}/fail` | JSON `{error}`; requeued up to 5 attempts |
+| `POST /api/stride/jobs/{id}/result` | multipart `result` (JSON: `origin`, `poses[]`, `stats`) + `points` file |
+
+Results from users with `trusted_worker` (set by a superuser) apply at once;
+others wait in `jobs` with status `review` until
+`pocketbase stride-approve <job id>`.
