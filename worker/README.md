@@ -25,6 +25,9 @@ pytest
 STRIDE_URL=http://127.0.0.1:8099 STRIDE_EMAIL=… STRIDE_PASSWORD=… STRIDE_ONCE=1 python -m stride_worker.main
 ```
 
-Measured on the South Building set (COLMAP's test data, 1600 px, GPS
-noise σ 4 m, compass σ 8°) on the Threadripper: see the commit history and
-`tests/` for the numbers this was tuned with.
+Measured on COLMAP's South Building set (128 photos at 1600 px, with
+synthetic GPS σ 4 m, compass σ 8°, tilt σ 2°) on a Threadripper 1950X,
+24 threads: 128/128 registered in one model, position error vs ground truth
+median 0.9 m (max 1.1 m), heading error max 1.3°, 13 min (6 min matching,
+6 min mapping). Feeding the GPS priors into bundle adjustment made it worse
+(median 2.9 m), so GPS is used only for pair selection and the final fit.
