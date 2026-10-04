@@ -26,6 +26,27 @@ services:
       timeout: 10s
       retries: 3
 
+  # alignment worker on the Pi itself; slow but always on. Credentials of
+  # its Stride account go in worker.env (see worker.env.example).
+  #   docker compose --profile worker up -d
+  stride-worker:
+    image: ghcr.io/cyberhirsch/stride-worker:latest
+    container_name: stride-worker
+    restart: unless-stopped
+    profiles: ["worker"]
+    env_file: worker.env
+    environment:
+      STRIDE_URL: http://stride-pb:8090
+      STRIDE_THREADS: "2"
+    # leave the Pi's other services (Jellyfin, Immich, ...) their CPU
+    cpus: 2
+    cpu_shares: 256
+    mem_limit: 3g
+    volumes:
+      - worker-tmp:/work
+    depends_on:
+      - stride-pb
+
   stride-tunnel:
     image: cloudflare/cloudflared:latest
     container_name: stride-tunnel
@@ -35,3 +56,6 @@ services:
     env_file: .env
     depends_on:
       - stride-pb
+
+volumes:
+  worker-tmp:
