@@ -85,9 +85,9 @@ struct MapScreen: View {
                 Annotation("", coordinate: item.coordinate, anchor: .center) {
                     annotationView(item)
                 }
+                .annotationTitles(.hidden)
             }
         }
-        .annotationTitles(.hidden)
         .mapControls {
             MapUserLocationButton()
             MapCompass()
