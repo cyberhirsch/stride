@@ -18,6 +18,8 @@ services:
       - "8091:8090"
     volumes:
       - ./pb_data:/pb_data
+      # photos prepared by tools/prepare_seed.py, read by `pocketbase import-seed`
+      - ./seed:/seed:ro
     healthcheck:
       test: ["CMD", "wget", "-q", "--spider", "http://localhost:8090/api/health"]
       interval: 30s

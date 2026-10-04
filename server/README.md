@@ -28,3 +28,15 @@ a public hostname pointing at `http://stride-pb:8090`, put the token in
 
 Moderation: three reports set `hidden` on a photo; review in the dashboard
 (`reports` collection), then clear `hidden` or delete the photo.
+
+## Seeding from Immich
+
+`tools/prepare_seed.py` copies selected photos (CSV export from Immich) into
+`seed/photos/` and writes `seed/manifest.json`; `import-seed` creates the
+records, owned by one Stride user. Default licence is `arr`.
+
+```bash
+python3 tools/prepare_seed.py /tmp/stride_landscapes.csv --min-score 0.05
+docker exec stride-pb /pb/pocketbase import-seed you@example.com arr \
+  --dir=/pb_data --hooksDir=/pb/pb_hooks --migrationsDir=/pb/pb_migrations
+```
