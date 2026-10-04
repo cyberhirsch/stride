@@ -1,0 +1,35 @@
+# Stride backend: its own PocketBase, separate from the shared `pocketbase`
+# container and every other database on the Pi.
+#
+# Lives at /media/cyberhirsch/SSD/Data/Stride on the Pi (deploy.sh syncs it).
+#   docker compose up -d --build                      # LAN only, port 8091
+#   docker compose --profile tunnel up -d --build     # plus Cloudflare tunnel
+#
+# The tunnel needs TUNNEL_TOKEN in .env (see .env.example). Its public
+# hostname should point at http://stride-pb:8090.
+name: stride
+
+services:
+  stride-pb:
+    build: .
+    container_name: stride-pb
+    restart: unless-stopped
+    ports:
+      - "8091:8090"
+    volumes:
+      - ./pb_data:/pb_data
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8090/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  stride-tunnel:
+    image: cloudflare/cloudflared:latest
+    container_name: stride-tunnel
+    restart: unless-stopped
+    profiles: ["tunnel"]
+    command: tunnel --no-autoupdate run
+    env_file: .env
+    depends_on:
+      - stride-pb

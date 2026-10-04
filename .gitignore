@@ -14,3 +14,6 @@ data/
 *.heic
 *.ply
 *.bin
+!.env.example
+pb_data/
+!web/.env.development

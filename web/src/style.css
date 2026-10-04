@@ -1,0 +1,137 @@
+/* Typegrid language: black ground, gray ladder, hairlines, sharp corners,
+   Inter for text, Outfit for controls, white as the only active colour. */
+:root {
+  --bg: #000;
+  --s1: #050505;
+  --s3: #0a0a0a;
+  --s4: #111;
+  --border: #222;
+  --border-hi: #555;
+  --text: #fff;
+  --dim: #666;
+  --dimmer: #888;
+  --error: #ff6b6b;
+  --font-main: "Inter", system-ui, sans-serif;
+  --font-ui: "Outfit", system-ui, sans-serif;
+  --bar-h: 52px;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text); font: 14px/1.5 var(--font-main); }
+[hidden] { display: none !important; }
+
+button, label, select, input, textarea, .logo { font-family: var(--font-ui); }
+
+button {
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--border);
+  padding: 8px 14px;
+  font-size: 12px;
+  letter-spacing: 0.05rem;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+button:hover:not(:disabled) { border-color: var(--border-hi); background: var(--s4); }
+button:disabled { opacity: 0.4; cursor: default; }
+button.glow { background: #fff; color: #000; border-color: #fff; font-weight: 600; }
+button.glow:hover:not(:disabled) { background: #ddd; box-shadow: 0 0 16px rgba(255, 255, 255, 0.25); }
+button.icon { border: none; font-size: 20px; line-height: 1; padding: 4px 8px; text-transform: none; }
+button.link { border: none; color: var(--dimmer); }
+button.small { padding: 4px 8px; font-size: 11px; }
+
+label {
+  display: flex; flex-direction: column; gap: 4px;
+  font-size: 11px; color: var(--dim); text-transform: uppercase; letter-spacing: 0.05rem;
+}
+label.inline { flex-direction: row; align-items: center; gap: 6px; }
+input, select, textarea {
+  background: var(--s4); color: var(--text); border: 1px solid var(--border);
+  padding: 8px 10px; font-size: 14px; text-transform: none; letter-spacing: normal; border-radius: 0;
+}
+input:focus, select:focus, textarea:focus { outline: none; border-color: var(--border-hi); }
+label.inline input { width: 72px; padding: 4px 6px; }
+
+.bar {
+  position: fixed; inset: 0 0 auto 0; height: var(--bar-h); z-index: 10;
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 0 16px; background: var(--s1); border-bottom: 1px solid var(--border);
+}
+.logo { font-size: 16px; font-weight: 600; letter-spacing: 0.15rem; }
+.logo span { font-weight: 300; opacity: 0.7; margin-left: 2px; }
+.bar-actions { display: flex; gap: 8px; }
+
+#map { position: fixed; inset: var(--bar-h) 0 0 0; }
+
+.panel {
+  position: fixed; top: var(--bar-h); right: 0; bottom: 0; width: 400px; z-index: 5;
+  background: var(--s1); border-left: 1px solid var(--border); overflow-y: auto;
+}
+.panel-header, .modal-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 16px; border-bottom: 1px solid var(--border);
+}
+.panel-header h2, .modal-header h2 {
+  margin: 0; font: 600 13px var(--font-ui); text-transform: uppercase; letter-spacing: 0.1rem;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.panel-image { display: block; background: var(--s3); border-bottom: 1px solid var(--border); }
+.panel-image img { display: block; width: 100%; max-height: 60vh; object-fit: contain; }
+.meta { display: grid; grid-template-columns: auto 1fr; gap: 6px 16px; margin: 0; padding: 16px; }
+.meta dt { color: var(--dim); font: 11px/1.9 var(--font-ui); text-transform: uppercase; letter-spacing: 0.05rem; }
+.meta dd { margin: 0; }
+.panel-actions { display: flex; gap: 8px; padding: 0 16px 16px; }
+.pad { padding: 16px; }
+
+.modal {
+  position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; padding: 16px;
+  background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(5px);
+}
+.modal-content {
+  width: min(560px, 100%); max-height: calc(100vh - 32px); display: flex; flex-direction: column;
+  background: var(--s4); border: 1px solid #333; box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+}
+.modal-body { padding: 16px; overflow-y: auto; }
+.modal-footer { padding: 12px 16px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; }
+
+.stack { display: flex; flex-direction: column; gap: 12px; }
+.stack.tight { gap: 6px; min-width: 0; }
+.row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.button-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.dim { color: var(--dim); }
+.small { font-size: 12px; margin: 0; }
+.error { color: var(--error); margin: 0; }
+p { margin: 0; }
+
+.upload-list { display: flex; flex-direction: column; gap: 8px; }
+.upload-item { display: grid; grid-template-columns: 96px 1fr; gap: 12px; padding: 8px; border: 1px solid var(--border); background: var(--s3); }
+.upload-item img { width: 96px; height: 96px; object-fit: cover; }
+.upload-item.uploading { opacity: 0.6; }
+.upload-item.error { border-color: var(--error); }
+
+.pick-banner {
+  position: fixed; top: calc(var(--bar-h) + 12px); left: 50%; transform: translateX(-50%); z-index: 40;
+  display: flex; align-items: center; gap: 12px; padding: 8px 8px 8px 16px;
+  background: var(--s4); border: 1px solid #fff; font-family: var(--font-ui);
+}
+.toast {
+  position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); z-index: 60;
+  padding: 10px 16px; background: var(--s4); border: 1px solid #333; font-family: var(--font-ui); font-size: 13px;
+}
+
+.maplibregl-ctrl-group { border-radius: 0 !important; background: var(--s4) !important; border: 1px solid var(--border); }
+.maplibregl-ctrl-group button { border: none; }
+.maplibregl-ctrl-group button + button { border-top: 1px solid var(--border) !important; }
+.maplibregl-ctrl-group .maplibregl-ctrl-icon { filter: invert(1); }
+
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-thumb { background: #333; }
+
+@media (max-width: 720px) {
+  .panel { top: auto; left: 0; width: 100%; height: 62vh; border-left: none; border-top: 1px solid var(--border); }
+  .panel-image img { max-height: 34vh; }
+  .bar { padding: 0 12px; }
+  .bar-actions button { padding: 8px 10px; }
+}
