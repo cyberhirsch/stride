@@ -1,0 +1,16 @@
+node_modules/
+dist/
+build/
+.env
+.env.*
+*.log
+.DS_Store
+Thumbs.db
+
+# photos and reconstructions stay out of git
+data/
+*.jpg
+*.jpeg
+*.heic
+*.ply
+*.bin
